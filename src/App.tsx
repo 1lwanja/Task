@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import React, { useState, useMemo } from "react";
+
 import Table from "./pages/Table";
 import Pagination from "./pages/Pagination";
+import Spinner from "./UI/Spinner";
 import Footer from "./components/Footer";
 import Navbar from "./components/Header";
+import useApiData from "./hooks/useApiData";
 
 interface Values {
   "1. open": string;
@@ -21,31 +23,16 @@ interface MetaData {
   [key: string]: string;
 }
 
-interface ApiData {
+export interface ApiData {
   "Time Series (5min)": TimeSeriesData;
   "Meta Data": MetaData;
 }
 
 const App: React.FC = () => {
-  const [apiData, setApiData] = useState<ApiData | null>(null);
+  const apiData = useApiData();
   const [currentPage, setCurrentPage] = useState<number>(1);
+
   const itemsPerPage: number = 10;
-
-  const API_KEY1 = "demo";
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(
-          `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=${API_KEY1}`
-        );
-        setApiData(response.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
-  }, []);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -59,9 +46,10 @@ const App: React.FC = () => {
 
   return (
     <>
+      <Navbar />
+
       {apiData ? (
         <div>
-          <Navbar />
           <Table
             metaData={apiData["Meta Data"]}
             timeSeriesData={paginatedData}
@@ -73,13 +61,11 @@ const App: React.FC = () => {
             )}
             onPageChange={paginate}
           />
-          <Footer />
         </div>
       ) : (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
-        </div>
+        <Spinner />
       )}
+      <Footer />
     </>
   );
 };
