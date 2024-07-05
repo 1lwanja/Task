@@ -1,55 +1,24 @@
-import React, { useState, useMemo } from "react";
-
-import Table from "./pages/Table";
-import Pagination from "./pages/Pagination";
-import Spinner from "./UI/Spinner";
+import React, { useState } from "react";
 import Footer from "./components/Footer";
 import Navbar from "./components/Header";
 import useApiData from "./hooks/useApiData";
-
-interface Values {
-  "1. open": string;
-  "2. high": string;
-  "3. low": string;
-  "4. close": string;
-  "5. volume": string;
-}
-
-interface TimeSeriesData {
-  [date: string]: Values;
-}
-
-interface MetaData {
-  [key: string]: string;
-}
-
-export interface ApiData {
-  "Time Series (5min)": TimeSeriesData;
-  "Meta Data": MetaData;
-}
+import Pagination from "./pages/Pagination";
+import Table from "./pages/Table";
+import Spinner from "./UI/Spinner";
+import usePaginate from "./hooks/usePaginate";
 
 const App: React.FC = () => {
-  const apiData = useApiData();
+  const { apiData, loading, error } = useApiData();
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const itemsPerPage: number = 10;
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  const paginatedData = useMemo(() => {
-    if (!apiData) return null;
-    const timeSeriesData = apiData["Time Series (5min)"];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return Object.entries(timeSeriesData).slice(startIndex, endIndex);
-  }, [apiData, currentPage]);
+  const { paginatedData, itemsPerPage } = usePaginate(currentPage, apiData);
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-
-      {apiData ? (
-        <div>
+      {error && <p>{error}</p>}
+      {!loading && apiData ? (
+        <main className="flex-grow">
           <Table
             metaData={apiData["Meta Data"]}
             timeSeriesData={paginatedData}
@@ -59,14 +28,14 @@ const App: React.FC = () => {
             totalPages={Math.ceil(
               Object.keys(apiData["Time Series (5min)"]).length / itemsPerPage
             )}
-            onPageChange={paginate}
+            onPageChange={setCurrentPage}
           />
-        </div>
+        </main>
       ) : (
         <Spinner />
       )}
       <Footer />
-    </>
+    </div>
   );
 };
 
